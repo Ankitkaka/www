@@ -1,0 +1,122 @@
+name: Build & Release Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Select build type'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - release
+          - debug
+      create_release:
+        description: 'Create a GitHub Release (manual trigger)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Prepare Keystore for Release Signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          echo "Setting up keystore..."
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Decoding keystore from RELEASE_KEYSTORE_BASE64 secret..."
+            echo "$KEYSTORE_BASE64" | base64 -d > my-upload-key.jks
+          elif [ -f "my-upload-key.jks.base64" ] && [ ! -f "my-upload-key.jks" ]; then
+            echo "Decoding keystore from my-upload-key.jks.base64 in repository..."
+            base64 -d my-upload-key.jks.base64 > my-upload-key.jks
+          elif [ -f "my-upload-key.jks" ]; then
+            echo "Using existing my-upload-key.jks found in repository."
+          else
+            echo "Generating new fallback upload keystore..."
+            keytool -genkeypair -v -keystore my-upload-key.jks \
+              -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "wishmagic123" -keypass "wishmagic123" \
+              -dname "CN=WishMagic Admin, OU=Mobile, O=WishMagic, L=Jaipur, ST=Rajasthan, C=IN"
+          fi
+          ls -la my-upload-key.jks
+
+      - name: Build Debug APK
+        if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' || github.event.inputs.build_type == null }}
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Build Release APK
+        if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == 'both' || github.event.inputs.build_type == null }}
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'wishmagic123' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'wishmagic123' }}
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Organize & Rename APK Outputs
+        run: |
+          mkdir -p build-artifacts
+          
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk build-artifacts/WishMagic-Admin-debug.apk
+            echo "Debug APK ready."
+          fi
+          
+          if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+            cp app/build/outputs/apk/release/app-release.apk build-artifacts/WishMagic-Admin-release.apk
+            echo "Release APK ready."
+          fi
+          
+          ls -lh build-artifacts/
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: WishMagic-Admin-APKs
+          path: build-artifacts/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == true
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build-artifacts/*.apk
+          name: Release ${{ github.ref_name || 'Manual Build' }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
