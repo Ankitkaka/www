@@ -1,0 +1,6 @@
+{
+  "name": "WishMagic Admin",
+  "description": "3D Claymorphism Live Admin Studio for WishMagic website control, festivals, templates, and settings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

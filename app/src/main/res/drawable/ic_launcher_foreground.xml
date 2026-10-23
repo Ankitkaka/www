@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Magic Wand Shaft -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38.5,69.5 L69.5,38.5 C70.5,37.5 72.1,37.5 73.1,38.5 L74.5,39.9 C75.5,40.9 75.5,42.5 74.5,43.5 L43.5,74.5 C42.5,75.5 40.9,75.5 39.9,74.5 L38.5,73.1 C37.5,72.1 37.5,70.5 38.5,69.5 Z" />
+    <!-- Wand Tip Gold Accent -->
+    <path
+        android:fillColor="#FDE047"
+        android:pathData="M65.0,43.0 L71.5,36.5 C72.5,35.5 74.1,35.5 75.1,36.5 L76.5,37.9 C77.5,38.9 77.5,40.5 76.5,41.5 L70.0,48.0 Z" />
+    <!-- Main Center Burst Sparkle -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M72,25 C72,29.5 75.5,33 80,33 C75.5,33 72,36.5 72,41 C72,36.5 68.5,33 64,33 C68.5,33 72,29.5 72,25 Z" />
+    <!-- Top-left Small Sparkle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,28 C42,30.5 44,32.5 46.5,32.5 C44,32.5 42,34.5 42,37 C42,34.5 40,32.5 37.5,32.5 C40,32.5 42,30.5 42,28 Z" />
+    <!-- Bottom Sparkle -->
+    <path
+        android:fillColor="#F472B6"
+        android:pathData="M33,52 C33,54 34.5,55.5 36.5,55.5 C34.5,55.5 33,57 33,59 C33,57 31.5,55.5 29.5,55.5 C31.5,55.5 33,54 33,52 Z" />
+    <!-- Right Small Sparkle -->
+    <path
+        android:fillColor="#DDD6FE"
+        android:pathData="M81,52 C81,54 82.5,55.5 84.5,55.5 C82.5,55.5 81,57 81,59 C81,57 79.5,55.5 77.5,55.5 C79.5,55.5 81,54 81,52 Z" />
+</vector>
