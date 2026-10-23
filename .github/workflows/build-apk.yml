@@ -52,27 +52,59 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Prepare Keystore for Release Signing
+      - name: Prepare Keystores & Environment (Debug & Release)
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
-          echo "Setting up keystore..."
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "Decoding keystore from RELEASE_KEYSTORE_BASE64 secret..."
-            echo "$KEYSTORE_BASE64" | base64 -d > my-upload-key.jks
-          elif [ -f "my-upload-key.jks.base64" ] && [ ! -f "my-upload-key.jks" ]; then
-            echo "Decoding keystore from my-upload-key.jks.base64 in repository..."
-            base64 -d my-upload-key.jks.base64 > my-upload-key.jks
-          elif [ -f "my-upload-key.jks" ]; then
-            echo "Using existing my-upload-key.jks found in repository."
+          echo "==========================================="
+          echo "1. Preparing debug.keystore..."
+          echo "==========================================="
+          if [ -f "debug.keystore" ]; then
+            echo "Found existing debug.keystore in repository."
+          elif [ -f "debug.keystore.base64" ]; then
+            echo "Restoring debug.keystore from debug.keystore.base64..."
+            base64 -d debug.keystore.base64 > debug.keystore
           else
-            echo "Generating new fallback upload keystore..."
+            echo "Generating new debug.keystore..."
+            keytool -genkeypair -v -keystore debug.keystore \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          ls -la debug.keystore
+
+          echo "==========================================="
+          echo "2. Preparing release upload keystore..."
+          echo "==========================================="
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Decoding release keystore from RELEASE_KEYSTORE_BASE64 secret..."
+            echo "$KEYSTORE_BASE64" | base64 -d > my-upload-key.jks
+          elif [ -f "my-upload-key.jks" ]; then
+            echo "Found existing my-upload-key.jks in repository."
+          elif [ -f "my-upload-key.jks.base64" ]; then
+            echo "Restoring release keystore from my-upload-key.jks.base64 in repository..."
+            base64 -d my-upload-key.jks.base64 > my-upload-key.jks
+          else
+            echo "Generating fallback upload keystore..."
             keytool -genkeypair -v -keystore my-upload-key.jks \
               -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass "wishmagic123" -keypass "wishmagic123" \
               -dname "CN=WishMagic Admin, OU=Mobile, O=WishMagic, L=Jaipur, ST=Rajasthan, C=IN"
           fi
           ls -la my-upload-key.jks
+
+          echo "==========================================="
+          echo "3. Preparing environment configuration..."
+          echo "==========================================="
+          if [ ! -f ".env" ]; then
+            if [ -f ".env.example" ]; then
+              cp .env.example .env
+              echo "Created .env from .env.example"
+            else
+              touch .env
+              echo "Created empty .env"
+            fi
+          fi
 
       - name: Build Debug APK
         if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' || github.event.inputs.build_type == null }}
